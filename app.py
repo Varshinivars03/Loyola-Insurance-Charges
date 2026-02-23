@@ -39,14 +39,14 @@ if st.button('Predict Charges'):
                                          columns=numerical_cols_for_scaler)
 
     # Scale the full input data
-    scaled_full_data = scaler.transform(input_data_for_scaler)
+    scaled_data = scaler.transform(input_data_for_scaler)
 
     # Get the index of 'charges' within the numerical_cols_for_scaler
     charges_idx = numerical_cols_for_scaler.index('charges')
 
     # Extract only the scaled feature columns (excluding 'charges') for model prediction
     # The model was trained on X (features without charges), so it expects n_features - 1 columns.
-    scaled_input_features_for_model = np.delete(scaled_full_data, charges_idx, axis=1)
+    scaled_input_features_for_model = np.delete(scaled_data, charges_idx, axis=1)
 
     # Make prediction using the model (which predicts the scaled 'charges')
     prediction_scaled = model.predict(scaled_input_features_for_model)
