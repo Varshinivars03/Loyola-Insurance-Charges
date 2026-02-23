@@ -1,19 +1,15 @@
 import streamlit as st
 import joblib
 import pandas as pd
-import numpy as np
 
-# Load the trained model and scaler
-model = joblib.load('linear_regression_model.joblib')
-scaler = joblib.load('scaler.pkl')
+# Load full trained pipeline (Scaler + Model together)
+model = joblib.load('insurance_pipeline.joblib')
 
-st.set_page_config(layout="wide")
-st.title('Insurance Charge Prediction')
+st.set_page_config(page_title="Insurance Charges Predictor", layout="wide")
 
-st.markdown("### Enter Patient Details for Charges Prediction")
+st.title("💰 Insurance Charges Prediction")
+st.markdown("### Enter Patient Details")
 
-# Create input fields for the features
-# Use st.columns for better layout
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -29,35 +25,22 @@ with col3:
     smoker_option = st.selectbox('Smoker?', ('No', 'Yes'))
     smoker = 1 if smoker_option == 'Yes' else 0
 
-# Create a button to predict
 if st.button('Predict Charges'):
-    # Define the exact numerical columns the scaler was fitted on, including 'charges'
-    numerical_cols_for_scaler = ['claim_amount', 'past_consultations', 'hospital_expenditure', 'annual_salary', 'children', 'smoker', 'charges']
 
-    # Prepare the input data for the scaler, including a dummy 'charges' column
-    input_data_for_scaler = pd.DataFrame([[claim_amount, past_consultations, hospital_expenditure, annual_salary, children, smoker, 0.0]],
-                                         columns=numerical_cols_for_scaler)
+    input_df = pd.DataFrame([{
+        'claim_amount': claim_amount,
+        'past_consultations': past_consultations,
+        'hospital_expenditure': hospital_expenditure,
+        'annual_salary': annual_salary,
+        'children': children,
+        'smoker': smoker
+    }])
 
-    # Scale the full input data
-    scaled_data = scaler.transform(input_data_for_scaler)
-
-    # Extract only the scaled feature columns (excluding 'charges') for model prediction
-    # The model was trained on X (features without charges), so it expects n_features - 1 columns.
-    scaled_input_features_for_model = np.delete(scaled_data, charges_idx, axis=1)
-
-    # Make prediction using the model (which predicts the scaled 'charges')
-    prediction_scaled = model.predict(scaled_input_features_for_model)
-
-    # Create a dummy array for inverse transformation
-    dummy_input_for_inverse = np.zeros((1, len(numerical_cols_for_scaler)))
-    dummy_input_for_inverse[0, charges_idx] = prediction_scaled[0] # Place the scaled prediction at the correct index
-
-    # Inverse transform the dummy array to get the prediction in original scale (USD)
-    original_scale_values = scaler.inverse_transform(dummy_input_for_inverse)
-    predicted_charges_usd = original_scale_values[0, charges_idx]
-
-    # Convert to INR (assuming 1 USD = 83 INR)
+    predicted_charges_usd = model.predict(input_df)[0]
     predicted_charges_inr = predicted_charges_usd * 83
 
     st.success(f'Predicted Insurance Charges (USD): **${predicted_charges_usd:,.2f}**')
     st.success(f'Predicted Insurance Charges (INR): **₹{predicted_charges_inr:,.2f}**')
+
+
+    
